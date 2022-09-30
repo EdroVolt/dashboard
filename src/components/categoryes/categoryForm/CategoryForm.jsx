@@ -21,6 +21,7 @@ import {
   addImageToCategory,
   editCategory,
   getAllCategoriesByType,
+  removeImageFromCategory,
   resetEditableCategory,
   setCategoryType,
 } from "../../../store/category/categorySlice";
@@ -46,7 +47,22 @@ function CategoryForm() {
         const data = new FormData();
         data.set('image', files[0].file)
 
-        dispatch(addImageToCategory({id: res.payload._id, data}))
+        if (editableCategory?.image?.url && files[0].file) {
+          dispatch(
+            removeImageFromCategory({
+              id: res.payload._id,
+              deletedImage: res?.payload?.image?.url,
+            })
+          )
+            .then(() =>
+              dispatch(addImageToCategory({ id: res.payload._id, data }))
+            )
+            .then(() => dispatch(dispatch(getAllCategoriesByType(values.category_type))));
+        } else {
+          dispatch(addImageToCategory({ id: res.payload._id, data })).then(
+            () => dispatch(dispatch(getAllCategoriesByType(values.category_type)))
+          );
+        }
 
         dispatch(getAllCategoriesByType(values.category_type));
         dispatch(resetEditableCategory(null));

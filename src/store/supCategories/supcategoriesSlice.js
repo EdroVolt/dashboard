@@ -78,6 +78,25 @@ export const addImageToSubCategory = createAsyncThunk(
   }
 );
 
+export const removeImageFromSubCategory = createAsyncThunk(
+  "subCategorySlice/removeImageFromSubCategory",
+  async ({id, deletedImage}, thunkAPI) => {
+    const { rejectWithValue } = thunkAPI;
+    try {
+      const res = await axios.put(baseAPI + `/subcategories/removeimage`, {id, deletedImage}, {
+        headers: {
+          Authorization: `Bearer ` + localStorage.getItem("token"),
+        },
+      });
+
+      console.log(res);
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const deleteSubCategory = createAsyncThunk(
   "subCategorySlice/deleteSubCategory",
   async (data, thunkAPI) => {

@@ -103,7 +103,7 @@ function OrderList() {
       dispatch(
         shipDoctorOrder({
           orderId: selectedOrderIdToShip,
-          date: dayjs(values.date).format('MM/DD/YYYY'),
+          date: dayjs(values.date).format("MM/DD/YY"),
           time: dayjs(values.time).format("HH:MM A"),
         })
       ).then((res) => {
@@ -289,18 +289,20 @@ function OrderList() {
                         {order.orderStatus === "delivered" ||
                           order.orderStatus === "cancelled" || (
                             <>
-                              <Tooltip title={<h5>Shipped</h5>}>
-                                <IconButton style={{ cursor: "pointer" }}>
-                                  {/* deliver btn */}
-                                  <LocalShippingIcon
-                                    color="info"
-                                    onClick={() => {
-                                      setOpenShip(true);
-                                      setSelectedOrderIdToShip(order._id);
-                                    }}
-                                  />
-                                </IconButton>
-                              </Tooltip>
+                              {order.orderStatus === "shipped" || (
+                                <Tooltip title={<h5>Shipped</h5>}>
+                                  <IconButton style={{ cursor: "pointer" }}>
+                                    {/* deliver btn */}
+                                    <LocalShippingIcon
+                                      color="info"
+                                      onClick={() => {
+                                        setOpenShip(true);
+                                        setSelectedOrderIdToShip(order._id);
+                                      }}
+                                    />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
 
                               <Tooltip title={<h5>Delivered</h5>}>
                                 <IconButton style={{ cursor: "pointer" }}>
@@ -321,29 +323,33 @@ function OrderList() {
                                   />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title={<h5>Cancel</h5>}>
-                                <IconButton style={{ cursor: "pointer" }}>
-                                  {/* cancel btn */}
-                                  <DoDisturbOnIcon
-                                    onClick={() =>
-                                      dispatch(
-                                        cancelDoctorOrder(order._id)
-                                      ).then(() => {
+
+                              {order.orderStatus === "shipped" || (
+                                <Tooltip title={<h5>Cancel</h5>}>
+                                  <IconButton style={{ cursor: "pointer" }}>
+                                    {/* cancel btn */}
+                                    <DoDisturbOnIcon
+                                      onClick={() =>
                                         dispatch(
-                                          getAllOrdersByStatus({
-                                            orderStatus,
-                                          })
-                                        );
-                                      })
-                                    }
-                                  />
-                                </IconButton>
-                              </Tooltip>
+                                          cancelDoctorOrder(order._id)
+                                        ).then(() => {
+                                          dispatch(
+                                            getAllOrdersByStatus({
+                                              orderStatus,
+                                            })
+                                          );
+                                        })
+                                      }
+                                    />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </>
                           )}
 
                         {order.orderStatus === "delivered" ||
-                          order.orderStatus === "pending" || (
+                          order.orderStatus === "pending" ||
+                          order.orderStatus === "shipped" || (
                             <Tooltip title={<h5>Remove</h5>}>
                               <IconButton className="btn-delete">
                                 <DeleteForeverIcon
@@ -378,7 +384,7 @@ function OrderList() {
 
               {/* -----pgination-----  */}
               <Pagination
-                count={10}
+                // count={10}
                 page={page}
                 onChange={(_, page) => setpage(page)}
               />
@@ -628,12 +634,14 @@ function OrderList() {
 
                       <DesktopTimePicker
                         label="Time"
-                        name='time'
+                        name="time"
                         onChange={(value) =>
                           formik.setFieldValue("time", value)
                         }
                         value={formik.values.time}
-                        renderInput={(params) => <TextField name="time" {...params} />}
+                        renderInput={(params) => (
+                          <TextField name="time" {...params} />
+                        )}
                       />
                     </LocalizationProvider>
                   </div>

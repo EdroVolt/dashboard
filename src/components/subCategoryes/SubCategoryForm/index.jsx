@@ -16,6 +16,7 @@ import {
   getAllSubCategories,
   setSubCategoryType,
   addImageToSubCategory,
+  removeImageFromSubCategory,
 } from "../../../store/supCategories/supcategoriesSlice";
 // Import React FilePond
 import { FilePond, File, registerPlugin } from "react-filepond";
@@ -25,7 +26,8 @@ import FilePondPluginImagePreview from "filepond-plugin-image-preview";
 import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 import { useDispatch, useSelector } from "react-redux";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { getAllCategoriesByType } from "../../../store/category/categorySlice";
 
 function SubCategoryForm() {
   const [files, setFiles] = useState([]);
@@ -35,6 +37,8 @@ function SubCategoryForm() {
   const { categories } = useSelector((state) => state.categorySlice);
   const dispatch = useDispatch();
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -49,9 +53,24 @@ function SubCategoryForm() {
         : dispatch(addSubCategory(values))
       ).then((res) => {
         const data = new FormData();
-        data.set('image', files[0].file)
+        data.set("image", files[0].file);
 
-        dispatch(addImageToSubCategory({id: res.payload._id, data}))
+        if (editableSubCategory?.image?.url && files[0].file) {
+          dispatch(
+            removeImageFromSubCategory({
+              id: res.payload._id,
+              deletedImage: res?.payload?.image?.url,
+            })
+          )
+            .then(() =>
+              dispatch(addImageToSubCategory({ id: res.payload._id, data }))
+            )
+            .then(() => dispatch(getAllSubCategories(values.category)));
+        } else {
+          dispatch(addImageToSubCategory({ id: res.payload._id, data })).then(
+            () => dispatch(getAllSubCategories(values.category))
+          );
+        }
 
         dispatch(getAllSubCategories(values.category));
         dispatch(resetEditableSubCategory(null));
@@ -62,11 +81,14 @@ function SubCategoryForm() {
   });
 
   useEffect(() => {
-    if (!editableSubCategory) formik.handleReset();
-    else {
+    dispatch(getAllCategoriesByType(searchParams.get("category_type")));
+    if (!editableSubCategory) {
+      formik.handleReset();
+      formik.setFieldValue("category", id);
+    } else {
       formik.setFieldValue("id", editableSubCategory?._id);
       formik.setFieldValue("name", editableSubCategory?.name);
-      formik.setFieldValue("category", editableSubCategory?.category);
+      formik.setFieldValue("category", id);
     }
   }, [editableSubCategory]);
 
