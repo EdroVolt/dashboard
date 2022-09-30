@@ -91,11 +91,16 @@ function AddProduct() {
           const data = new FormData();
           data.set("image", files[0]?.file);
 
-          dispatch(addImageToProduct({ id: res.payload._id, data }));
+          dispatch(
+            addImageToProduct({
+              id: res.payload._id || editableProduct._id,
+              data,
+            })
+          ).then(() => navigate("/products"));
+        } else {
+          dispatch(resetEditableProduct(null));
+          navigate("/products");
         }
-        // dispatch(getAllProduct());
-        dispatch(resetEditableProduct(null));
-        // navigate("/products");
       });
     },
   });
@@ -113,7 +118,7 @@ function AddProduct() {
       formik.setFieldValue("madeIn", editableProduct?.madeIn);
       formik.setFieldValue("offer", editableProduct?.offer);
       formik.setFieldValue("description", editableProduct?.description);
-      console.log("productionDate",editableProduct?.productionDate);
+      console.log("productionDate", editableProduct?.productionDate);
       formik.setFieldValue("productionDate", editableProduct?.productionDate);
       // formik.setFieldValue("supCategory", editableProduct?.supCategory.name);
       formik.setFieldValue("brand", editableProduct?.brand?.id);
@@ -433,7 +438,7 @@ function AddProduct() {
               files={files}
               onupdatefiles={setFiles}
               allowMultiple={true}
-              maxFiles={3}
+              maxFiles={1}
               name="files"
               labelIdle='Drag & Drop your images or <span class="filepond--label-action">Browse</span>'
             />
