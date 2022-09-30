@@ -159,6 +159,29 @@ export const deliverDoctorOrder = createAsyncThunk(
   }
 );
 
+export const updateDoctorOrderTrake = createAsyncThunk(
+  "orderSlice/updateDoctorOrderTrake",
+  async ({ orderId, date, time }, thunkAPI) => {
+    const { rejectWithValue } = thunkAPI;
+    try {
+      const res = await axios.put(
+        baseAPI + `/orders/admin/updateTrack`,
+        { orderId, date, time },
+        {
+          headers: {
+            Authorization: `Bearer ` + localStorage.getItem("token"),
+          },
+        }
+      );
+
+      console.log(res);
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const deleteOrder = createAsyncThunk(
   "orderSlice/deleteOrder",
   async (orderId, thunkAPI) => {

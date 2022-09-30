@@ -27,6 +27,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { getAllCategoriesByType } from "../../../store/category/categorySlice";
+import Swal from "sweetalert2";
 
 function ProductList() {
   const { products, categoryType } = useSelector((state) => state.productSlice);
@@ -106,10 +107,10 @@ function ProductList() {
             justifyContent: "center",
             width: "60%",
             margin: "0 auto",
-            gap: '18px'
+            gap: "18px",
           }}
         >
-          <div style={{display: 'flex'}}>
+          <div style={{ display: "flex" }}>
             <TextField
               id="search"
               label="Search"
@@ -117,12 +118,10 @@ function ProductList() {
               name="name"
               value={formik.values.name}
               onChange={formik.handleChange}
-              error={
-                formik.touched.name && Boolean(formik.errors.name)
-              }
-              style={{flexGrow: 1, width: '500px'}}
+              error={formik.touched.name && Boolean(formik.errors.name)}
+              style={{ flexGrow: 1, width: "500px" }}
             />
-            <FormControl style={{width: '120px'}}>
+            <FormControl style={{ width: "120px" }}>
               <InputLabel id="category-label">category</InputLabel>
               <Select
                 labelId="category-label"
@@ -181,20 +180,35 @@ function ProductList() {
                       <EditIcon
                         onClick={() => {
                           dispatch(setEditableProduct(product));
-                          navigate("/productForm");
+                          navigate(
+                            `/productForm?category_type=${categoryType}&category_id=${product.subCategory[0].category}&subCategory_id=${product.subCategory[0]._id}`
+                          );
                         }}
                       />
                     </span>
                     <span className="btn-delete">
                       <DeleteForeverIcon
                         onClick={() =>
-                          // eslint-disable-next-line no-restricted-globals
-                          confirm('are you sure you want to delete this product ?') ?
-                           dispatch(
-                            deleteProduct({
-                              id: product._id,
-                            })
-                          ).then(() => dispatch(getAllProduct())) : null
+                          Swal.fire({
+                            title:
+                              "are you sure you want to delete this product ?",
+                            // showDenyButton: true,
+                            showCancelButton: true,
+                            confirmButtonText: "Delete",
+                            // denyButtonText: `Don't save`,
+                          }).then((result) => {
+                            /* Read more about isConfirmed, isDenied below */
+                            if (result.isConfirmed) {
+                              dispatch(
+                                deleteProduct({
+                                  id: product._id,
+                                })
+                              ).then(() => {
+                                // Swal.fire('deleted!', '', 'success')
+                                dispatch(getAllProduct({ categoryType, page }));
+                              });
+                            }
+                          })
                         }
                       />
                     </span>
@@ -205,7 +219,11 @@ function ProductList() {
           </table>
 
           {/* -----pgination-----  */}
-          <Pagination count={10} page={page} onChange={(_, page) => setpage(page)} />
+          <Pagination
+            count={10}
+            page={page}
+            onChange={(_, page) => setpage(page)}
+          />
         </div>
       </div>
     </>

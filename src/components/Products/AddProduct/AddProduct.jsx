@@ -7,7 +7,7 @@ import {
   TextField,
 } from "@material-ui/core";
 import { LocalizationProvider } from "@mui/x-date-pickers";
-import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import React, { useEffect, useState } from "react";
 import "./addproduct.scss";
@@ -34,9 +34,15 @@ import {
 } from "../../../store/category/categorySlice";
 import { getAllSubCategories } from "../../../store/supCategories/supcategoriesSlice";
 import { getAllBrand } from "../../../store/brand/brand.slice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { file } from "fontawesome";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(customParseFormat);
 registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 
 function AddProduct() {
@@ -52,11 +58,12 @@ function AddProduct() {
   const [files, setFiles] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const formik = useFormik({
     initialValues: {
       name: "",
-      subCategory: "",
+      subCategory: searchParams.get("subCategory_id") || "",
       brand: "",
       description: "",
       offer: "",
@@ -78,7 +85,7 @@ function AddProduct() {
         : dispatch(addProduct(values))
       ).then((res) => {
         console.log(res);
-        toast("Product Added Successfully");
+        toast(`Product ${editableProduct ? "Updated" : "Added"} Successfully`);
 
         if (files.length) {
           const data = new FormData();
@@ -106,8 +113,10 @@ function AddProduct() {
       formik.setFieldValue("madeIn", editableProduct?.madeIn);
       formik.setFieldValue("offer", editableProduct?.offer);
       formik.setFieldValue("description", editableProduct?.description);
+      console.log("productionDate",editableProduct?.productionDate);
+      formik.setFieldValue("productionDate", editableProduct?.productionDate);
       // formik.setFieldValue("supCategory", editableProduct?.supCategory.name);
-      formik.setFieldValue("brand", editableProduct?.brand.id);
+      formik.setFieldValue("brand", editableProduct?.brand?.id);
     }
   }, [editableProduct]);
 
@@ -116,7 +125,9 @@ function AddProduct() {
   }, [categoryType]);
 
   useEffect(() => {
-    selectedCategoryId && dispatch(getAllSubCategories(selectedCategoryId));
+    dispatch(
+      getAllSubCategories(selectedCategoryId || searchParams.get("category_id"))
+    );
   }, [selectedCategoryId]);
 
   useEffect(() => {
@@ -174,7 +185,7 @@ function AddProduct() {
                 id="CategoryType"
                 label="Category Type"
                 name="CategoryType"
-                value={categoryType}
+                value={categoryType || searchParams.get("category_type")}
                 onChange={(e) => dispatch(setCategoryType(e.target.value))}
               >
                 <MenuItem value={"product"}>product</MenuItem>
@@ -191,7 +202,7 @@ function AddProduct() {
                 id="category"
                 label="Category"
                 name="category"
-                value={selectedCategoryId}
+                value={selectedCategoryId || searchParams.get("category_id")}
                 onChange={(e) => setSelectedCategoryId(e.target.value)}
               >
                 {categories.map((cat) => (
@@ -390,22 +401,19 @@ function AddProduct() {
               helperText={formik.touched.madeIn && formik.errors.madeIn}
             />
             {/* ----------------------- */}
-            <TextField
-              margin="normal"
-              fullWidth
-              id="productionDate"
-              label="production Date"
-              name="productionDate"
-              value={formik.values.productionDate}
-              onChange={formik.handleChange}
-              error={
-                formik.touched.productionDate &&
-                Boolean(formik.errors.productionDate)
-              }
-              helperText={
-                formik.touched.productionDate && formik.errors.productionDate
-              }
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Production Date"
+                name="productionDate"
+                value={formik.values.productionDate}
+                onChange={(value) =>
+                  formik.setFieldValue("productionDate", value)
+                }
+                renderInput={(params) => (
+                  <TextField name="productionDate" {...params} />
+                )}
+              />
+            </LocalizationProvider>
             {/* ----------------------- */}
             {/* <LocalizationProvider dateAdapter={AdapterMoment}>
             <DesktopDatePicker

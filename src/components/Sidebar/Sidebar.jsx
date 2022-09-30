@@ -24,10 +24,12 @@ const Sidebar = () => {
         {/* =============================== Logo ================================ */}
         <div className="sidebarMenu">
           {/* ----------logo---------- */}
-          <NavLink to="/" className="loogo">
+          {/* <NavLink to="/" className="loogo"> */}
+          <div className="loogo">
             <img className="loogo" src={logo} alt="logo" />
             <span className="lodgname"> Life</span>
-          </NavLink>
+          </div>
+          {/* </NavLink> */}
           {/* =============================== Sidebar Links ================================ */}
           <ul className="sidebarList">
             {/* ----------home---------- */}
@@ -156,7 +158,7 @@ const Sidebar = () => {
                   </NavLink>
                   <NavLink to="/productForm" className="sidebarListItem">
                     <i className="fa-solid fa-person-dolly"></i>
-                    <span>Add Product</span>
+                    <span>Add/Edit Product</span>
                   </NavLink>
                 </fieldset>
                 {/*---- Emloyee links ----*/}

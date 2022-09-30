@@ -22,6 +22,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import DoDisturbOnIcon from "@mui/icons-material/DoDisturbOn";
 import {
   cancelDoctorOrder,
@@ -31,6 +32,7 @@ import {
   getDoctorOrderDetails,
   getOrdersByDate,
   shipDoctorOrder,
+  updateDoctorOrderTrake,
 } from "../../../store/order/orderSlice";
 import { useEffect } from "react";
 // import "./supcategories.scss";
@@ -44,6 +46,10 @@ import dayjs from "dayjs";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useFormik } from "formik";
 import { DesktopTimePicker } from "@mui/x-date-pickers";
+import Swal from "sweetalert2";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(customParseFormat);
 
 const style = {
   position: "absolute",
@@ -71,11 +77,16 @@ function OrderList() {
   const [openShip, setOpenShip] = React.useState(false);
   const [selectedOrderIdToShip, setSelectedOrderIdToShip] = useState();
   const [page, setpage] = useState(1);
+  const [updateTrack, setUpdateTrack] = useState(1);
 
   const handleOpenDetails = (id) => {
     dispatch(getDoctorOrderDetails(id)).then(() => setOpen(true));
+    setUpdateTrack(true);
   };
-  const handleCloseDetails = () => setOpen(false);
+  const handleCloseDetails = () => {
+    setOpen(false);
+    setUpdateTrack(false);
+  };
 
   const handleCloseShip = () => setOpenShip(false);
 
@@ -96,19 +107,36 @@ function OrderList() {
 
   const formik = useFormik({
     initialValues: {
-      date: dayjs(new Date()),
-      time: "12:00 PM",
+      date: dayjs(new Date()).format("MM/DD/YY"),
+      time: dayjs("12:00 PM", "HH:MM A")
     },
     onSubmit: (values) => {
-      dispatch(
-        shipDoctorOrder({
-          orderId: selectedOrderIdToShip,
-          date: dayjs(values.date).format("MM/DD/YY"),
-          time: dayjs(values.time).format("HH:MM A"),
-        })
+      (updateTrack
+        ? dispatch(
+            updateDoctorOrderTrake({
+              orderId: orderDetails._id,
+              date: dayjs(values.date).format("MM/DD/YY"),
+              time: dayjs(values.time).format("HH:MM A"),
+            })
+          )
+        : dispatch(
+            shipDoctorOrder({
+              orderId: selectedOrderIdToShip,
+              date: dayjs(values.date).format("MM/DD/YY"),
+              time: dayjs(values.time).format("HH:MM A"),
+            })
+          )
       ).then((res) => {
+        Swal.fire(
+          'Good job!',
+          'Updated successfully!',
+          'success'
+        )
         console.log(res);
         setOpenShip(false);
+        setUpdateTrack(false);
+        handleCloseDetails();
+        
         if (startDate && endDate)
           dispatch(
             getOrdersByDate({
@@ -135,6 +163,14 @@ function OrderList() {
       );
     else dispatch(getAllOrdersByStatus({ orderStatus: orderStatus }));
   }, [orderStatus, page]);
+
+  useEffect(() => {
+    if (orderDetails) {
+      // console.log('time:', );
+      formik.setFieldValue("date", dayjs(orderDetails?.deliverInfo?.date));
+      formik.setFieldValue("time", dayjs(orderDetails?.deliverInfo?.time, "HH:MM A"));
+    }
+  }, [orderDetails]);
 
   const orderStatusColorMap = {
     pending: "info",
@@ -384,7 +420,7 @@ function OrderList() {
 
               {/* -----pgination-----  */}
               <Pagination
-                // count={10}
+                count={10}
                 page={page}
                 onChange={(_, page) => setpage(page)}
               />
@@ -415,169 +451,233 @@ function OrderList() {
               >
                 Order Details
               </Typography>
-              <div
-                style={{
-                  padding: "32px",
-                }}
-              >
-                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                  <span
+              <Grid container spacing={2}>
+                <Grid xs={5}>
+                  <div
                     style={{
-                      display: "inline-block",
-                      marginRight: "8px",
-                      fontWeight: "bold",
+                      padding: "32px",
                     }}
                   >
-                    {" "}
-                    Order Date :{" "}
-                  </span>{" "}
-                  {orderDetails?.orderDate}
-                </Typography>
+                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          marginRight: "8px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {" "}
+                        Order Date :{" "}
+                      </span>{" "}
+                      {orderDetails?.orderDate}
+                    </Typography>
 
-                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      marginRight: "8px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Order Status :{" "}
-                  </span>
+                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          marginRight: "8px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Order Status :{" "}
+                      </span>
 
-                  {orderDetails?.orderStatus}
-                </Typography>
+                      {orderDetails?.orderStatus}
+                    </Typography>
 
-                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      marginRight: "8px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Total Price :{" "}
-                  </span>
-                  {orderDetails?.totalPrice}
-                </Typography>
+                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          marginRight: "8px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Total Price :{" "}
+                      </span>
+                      {orderDetails?.totalPrice}
+                    </Typography>
 
-                {/* <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                    {/* <Typography id="modal-modal-description" sx={{ mt: 2 }}>
                 Products : {orderDetails?.products.map((p) => )}
               </Typography> */}
 
-                <div style={{ display: "flex", gap: "18px" }}>
-                  <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        marginRight: "8px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Address :{" "}
-                    </span>
-                  </Typography>
+                    <div style={{ display: "flex", gap: "18px" }}>
+                      <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginRight: "8px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          Address :{" "}
+                        </span>
+                      </Typography>
 
-                  <div style={{ flexGrow: 1 }}>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Name:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.addressName}
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        governorate:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.governorate}
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        city:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.city}
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        street:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.street}
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        building:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.building}
-                    </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                      <span
-                        style={{
-                          background: "#0d6efd",
-                          minWidth: "150px",
-                          display: "inline-block",
-                          color: "#fff",
-                          padding: "2px 6px",
-                          marginRight: "8px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        details:
-                      </span>
-                      {orderDetails?.deliverInfo?.address?.details}
-                    </Typography>
+                      <div style={{ flexGrow: 1 }}>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Name:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.addressName}
+                        </Typography>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            governorate:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.governorate}
+                        </Typography>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            city:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.city}
+                        </Typography>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            street:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.street}
+                        </Typography>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            building:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.building}
+                        </Typography>
+                        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                          <span
+                            style={{
+                              background: "#0d6efd",
+                              minWidth: "150px",
+                              display: "inline-block",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              marginRight: "8px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            details:
+                          </span>
+                          {orderDetails?.deliverInfo?.address?.details}
+                        </Typography>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </Grid>
+
+                <Grid xs={7}>
+                  {orderDetails?.orderStatus === "shipped" && (
+                    <div
+                      style={{ display: "flex", gap: "18px", padding: "32px" }}
+                    >
+                      <Typography id="modal-modal-description">
+                        <span
+                          style={{
+                            display: "inline-block",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          Deliver Date & Time:
+                        </span>
+                      </Typography>
+
+                      <form
+                        onSubmit={formik.handleSubmit}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                          width: "60%",
+                          margin: "0 auto",
+                          gap: "18px",
+                        }}
+                      >
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label="date"
+                            name="date"
+                            onChange={(value) =>
+                              formik.setFieldValue("date", value)
+                            }
+                            value={formik.values.date}
+                            renderInput={(params) => (
+                              <TextField name="date" {...params} />
+                            )}
+                          />
+
+                          <DesktopTimePicker
+                            label="Time"
+                            name="time"
+                            onChange={(value) =>
+                              formik.setFieldValue("time", value)
+                            }
+                            value={formik.values.time}
+                            renderInput={(params) => (
+                              <TextField name="time" {...params} />
+                            )}
+                          />
+                        </LocalizationProvider>
+                        <Button type="submit" variant="contained" color="info">
+                          Change
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+                </Grid>
+              </Grid>
             </Box>
           </Modal>
 
